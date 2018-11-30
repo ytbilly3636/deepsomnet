@@ -23,7 +23,7 @@ class SOM2D:
         #self.lc = np.max(ip, axis=1) / (np.sum(ip, axis=1) + INTMAXINV)
         #self.lc = self.lc.reshape(self.lc.shape[0], 1)
         indices = np.argmax(ip, axis=1)
-        cy = indices / self.W.shape[1]
+        cy = indices // self.W.shape[1]
         cx = indices % self.W.shape[1]
         self.c = np.append(cy.reshape(-1, 1), cx.reshape(-1, 1), axis=1)
         return self.c
@@ -36,7 +36,7 @@ class SOM2D:
         #self.lc = np.max(ip, axis=1) / (np.sum(ip, axis=1) + INTMAXINV)
         #self.lc = self.lc.reshape(self.lc.shape[0], 1)
         indices = cp.argmax(ip, axis=1)
-        cy = indices / self.W.shape[1]
+        cy = indices // self.W.shape[1]
         cx = indices % self.W.shape[1]
         self.c = cp.concatenate((cy.reshape(-1, 1), cx.reshape(-1, 1)), axis=1)
         return self.c
@@ -50,7 +50,7 @@ class SOM2D:
         self.lc = np.max(ip, axis=1) / (np.sum(ip, axis=1) + INTMAXINV)
         self.lc = self.lc.reshape(self.lc.shape[0], 1)
         indices = np.argmax(ip, axis=1)
-        cy = indices / self.W.shape[1]
+        cy = indices // self.W.shape[1]
         cx = indices % self.W.shape[1]
         self.c = np.append(cy.reshape(-1, 1), cx.reshape(-1, 1), axis=1)
         return self.c
@@ -59,7 +59,7 @@ class SOM2D:
         h = self.__gaussian(self.c, var)
         dW = np.tensordot(h, self.x, axes=(0, 0)) - self.W * np.sum(h, axis=0).reshape(self.W.shape[0], self.W.shape[1], 1, 1)
         self.W = self.W + lr * dW / self.x.shape[0]
-        self.W = self.W / np.linalg.norm(self.W.reshape(self.W.shape[0], self.W.shape[1], -1), axis=2).reshape(self.W.shape[0], self.W.shape[1], 1, 1)
+        self.W = self.W / (np.linalg.norm(self.W.reshape(self.W.shape[0], self.W.shape[1], -1), axis=2).reshape(self.W.shape[0], self.W.shape[1], 1, 1) + INTMAXINV)
     
     '''    
     def update_gpu(self, lr=0.01, var=1.0):
@@ -82,7 +82,7 @@ class SOM2D:
     
     def __kdelta(self, c):
         indices = np.arange(c.shape[0]*self.W.shape[0]*self.W.shape[1]).reshape(c.shape[0], self.W.shape[0], self.W.shape[1])
-        y = indices / self.W.shape[1] % self.W.shape[0]
+        y = indices // self.W.shape[1] % self.W.shape[0]
         x = indices % self.W.shape[1]
         md = np.abs(y - c[:,0].reshape(-1, 1, 1)) + np.abs(x - c[:,1].reshape(-1, 1, 1))
         md[np.where(md != 0)] = -1
@@ -90,7 +90,7 @@ class SOM2D:
                 
     def __gaussian(self, c, var):
         indices = np.arange(c.shape[0]*self.W.shape[0]*self.W.shape[1]).reshape(c.shape[0], self.W.shape[0], self.W.shape[1])
-        y = indices / self.W.shape[1] % self.W.shape[0]
+        y = indices // self.W.shape[1] % self.W.shape[0]
         x = indices % self.W.shape[1]
         dy = np.abs(y - c[:,0].reshape(-1, 1, 1))
         dx = np.abs(x - c[:,1].reshape(-1, 1, 1))
@@ -99,7 +99,7 @@ class SOM2D:
     '''    
     def __gaussian_gpu(self, c, var):
         indices = cp.arange(c.shape[0]*self.W.shape[0]*self.W.shape[1]).reshape(c.shape[0], self.W.shape[0], self.W.shape[1])
-        y = indices / self.W.shape[1] % self.W.shape[0]
+        y = indices // self.W.shape[1] % self.W.shape[0]
         x = indices % self.W.shape[1]
         dy = cp.abs(y - c[:,0].reshape(-1, 1, 1))
         dx = cp.abs(x - c[:,1].reshape(-1, 1, 1))

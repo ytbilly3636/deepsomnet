@@ -72,9 +72,9 @@ class Network2014:
         pad_x = np.zeros((x.shape[0], x.shape[1], x.shape[2]+2*padding, x.shape[3]+2*padding), x.dtype)
         pad_x[:, :, padding:padding+x.shape[2], padding:padding+x.shape[3]] = x
         
-        i_step = 1 + (pad_x.shape[2] - kernel) / stride
-        j_step = 1 + (pad_x.shape[3] - kernel) / stride
-        return [[pad_x[:, :, stride*i:stride*i+kernel, stride*j:stride*j+kernel] for j in xrange(j_step)] for i in xrange(i_step)]
+        i_step = 1 + (pad_x.shape[2] - kernel) // stride
+        j_step = 1 + (pad_x.shape[3] - kernel) // stride
+        return [[pad_x[:, :, stride*i:stride*i+kernel, stride*j:stride*j+kernel] for j in six.moves.range(j_step)] for i in six.moves.range(i_step)]
         
     def __pproc_map(self, x, kernel, stride):
         x_h = len(x)
@@ -88,6 +88,6 @@ class Network2014:
             for j, chunk in enumerate(l):
                 whole[:, :, c_h*i:c_h*(i+1), c_w*j:c_w*(j+1)] = chunk
                 
-        i_step = 1 + (x_h - kernel) / stride
-        j_step = 1 + (x_w - kernel) / stride        
-        return [[whole[:, :, (c_h*stride)*i:(c_h*stride)*i+(c_h*kernel), (c_w*stride)*j:(c_w*stride)*j+(c_w*kernel)] for j in xrange(j_step)] for i in xrange(i_step)]
+        i_step = 1 + (x_h - kernel) // stride
+        j_step = 1 + (x_w - kernel) // stride
+        return [[whole[:, :, (c_h*stride)*i:(c_h*stride)*i+(c_h*kernel), (c_w*stride)*j:(c_w*stride)*j+(c_w*kernel)] for j in six.moves.range(j_step)] for i in six.moves.range(i_step)]

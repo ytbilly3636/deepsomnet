@@ -32,7 +32,7 @@ class DSNTrainer:
                 accuracy[t[b]][0] += 1.0 if (y[b][0], y[b][1]) == (self.reps[t[b]][0], self.reps[t[b]][1]) else 0.0
                 accuracy[t[b]][1] += 1.0
         
-        print 'accuracy:', np.sum(accuracy[:, 0]) / np.sum(accuracy[:, 1])
+        print('accuracy:', np.sum(accuracy[:, 0]) / np.sum(accuracy[:, 1]))
             
     def pretraining(self, iters=400, batch=100, lr_ini=1.0, lr_fin=0.0, var_ini=2.75, var_fin=0.5):
         perm = np.random.permutation(len(self.train))
@@ -46,9 +46,9 @@ class DSNTrainer:
             stop = 1 + int(float(i) / (iters * 0.25))
             self.net.predict(x, stop)
             self.net.pretrain(lr, var, stop)
-            self.__wviz()
-        cv2.destroyAllWindows()
-        cv2.waitKey(1)
+            #self.__wviz()
+        #cv2.destroyAllWindows()
+        #cv2.waitKey(1)
         
     def finetuning(self, iters=100, batch=100, lr=0.75, beta=0.5):
         if self.reps == None:
@@ -87,7 +87,7 @@ class DSNTrainer:
         for l in six.moves.range(10):
             rep = np.argmax(vote[l])
             vote[:, rep] = 0
-            self.reps.append([rep/10, rep%10])
+            self.reps.append([rep//10, rep%10])
             self.advs[l] = temp_advs[rep]
 
     def saveparams(self, path):
@@ -126,8 +126,8 @@ class DSNTrainer:
     def __wviz(self):
         w = self.net.l1[3][3].W
         img = np.zeros((60, 60))
-        for y in xrange(10):
-            for x in xrange(10):
+        for y in six.moves.range(10):
+            for x in six.moves.range(10):
                 img[y*6:(y+1)*6, x*6:(x+1)*6] = w[y][x].reshape(6, 6)
         img = cv2.resize(img, (300, 300))
         '''
