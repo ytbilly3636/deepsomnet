@@ -131,14 +131,51 @@ class SOM2D_UINT8:
         self.w = w_new.astype(np.uint8)
 
 
-    def update_useadv(self, lr, layer, layer_total):
+    def update_lvq(self, mask, lr, layer, layer_total):
+        # mask: (b, ): +1 or -1
+        # layer: layer of this module
+        # layer_total: total layer of this network 
+
+        # m: (b, ) -> (b, 1, 1, 1)
+        m = mask.reshape(mask.shape + (1, 1, 1))
+        m = m.astype(np.float32)
+
+        # k: (b, h, w) -> (b, h, w, 1)
+        k = self.__kdelta(self.c)
+        k = k.reshape(k.shape + (1, ))
+        k = k.astype(np.float32)
+
+        # x: (b, c, d) -> (b, 1, 1, d)
+        x_ = self.x.reshape(self.x.shape[0], 1, 1, self.x.shape[1])
+        x_ = x_.astype(np.float32)
+
+        # w: (h, w, d) -> (1, h, w, d)
+        w_ = self.w.reshape((1, ) + self.w.shape)
+        w_ = w_.astype(np.float32)
+
+        # dw: (b, h, w, d) -> (h, w, d)
+        dw = (x_ - w_) * m * k * np.power(0.5, lr) * np.power(0.5, layer_total - layer)
+        dw = np.mean(dw, axis=0)
+
+        w_new = self.w.astype(np.float32) + dw
+        w_new[np.where(w_new < 0)] = 0
+        w_new[np.where(w_new > 255)] = 255
+        self.w = w_new.astype(np.uint8)
+
+
+    def update_lvq_useadv(self, mask, lr, layer, layer_total):
+        # mask: (b, ): +1 or -1
         # layer: layer of this module
         # layer_total: total layer of this network 
 
         # path check: (b, ) -> (b, 1, 1, 1)
-        p = self.__ccheck()
-        p = p.reshape(p.shape + (1, 1, 1))
-        p = p.astype(np.float32)
+        # p = self.__ccheck()
+        # p = p.reshape(p.shape + (1, 1, 1))
+        # p = p.astype(np.float32)
+
+        # m: (b, ) -> (b, 1, 1, 1)
+        m = mask.reshape(mask.shape + (1, 1, 1))
+        m = m.astype(np.float32)
 
         # k: (b, h, w) -> (b, h, w, 1)
         k = self.__kdelta(self.c_useadv)
@@ -154,7 +191,7 @@ class SOM2D_UINT8:
         w_ = w_.astype(np.float32)
 
         # dw: (b, h, w, d) -> (h, w, d)
-        dw = (x_ - w_) * p * k * np.power(0.5, lr) * np.power(0.5, layer_total - layer)
+        dw = (x_ - w_) * m * k * np.power(0.5, lr) * np.power(0.5, layer_total - layer)
         dw = np.mean(dw, axis=0)
 
         w_new = self.w.astype(np.float32) + dw
@@ -212,21 +249,21 @@ class SOM2D_UINT8:
         ow = np.eye(self.w.shape[1])[cw]   # self.w.shape[1] = w
 
         # (b, h, w)
-        o = oh.reshape(-1, self.w.shape[0], 1) * ow.reshape(-1, self.w.shape[1], 1)
+        o = oh.reshape(-1, self.w.shape[0], 1) * ow.reshape(-1, 1, self.w.shape[1])
         o.astype(np.uint8)
         return o
 
 
-    def __ccheck(self):
-        c = self.c[:, 0] * self.w.shape[1] + self.c[:, 1]
-        c_useadv = self.c_useadv[:, 0] * self.w.shape[1] + self.c_useadv[:, 1]
+    # def __ccheck(self):
+    #     c = self.c[:, 0] * self.w.shape[1] + self.c[:, 1]
+    #     c_useadv = self.c_useadv[:, 0] * self.w.shape[1] + self.c_useadv[:, 1]
 
-        # same path -> +1, different path -> -1
-        differ = (c == c_useadv)
-        differ = differ.astype(np.float32)
-        differ = differ * 2 - 1
+    #     # same path -> +1, different path -> -1
+    #     differ = (c == c_useadv)
+    #     differ = differ.astype(np.float32)
+    #     differ = differ * 2 - 1
 
-        return differ
+    #     return differ
 
 
 if __name__ == '__main__':

@@ -76,15 +76,27 @@ class Network2014_UINT8:
             [[som.update(lr) for som in l] for l in self.l4]
 
 
-    def finetune(self, lr):
+    # step1
+    def finetune(self, mask, lr):
         # mask: (b, ): if each batch is correct or not (+1 or -1)
         
         total = 4
-        [[som.update_useadv(lr, layer=1, layer_total=total) for som in l] for l in self.l1]
-        [[som.update_useadv(lr, layer=2, layer_total=total) for som in l] for l in self.l2]
-        [[som.update_useadv(lr, layer=3, layer_total=total) for som in l] for l in self.l3]
-        [[som.update_useadv(lr, layer=4, layer_total=total) for som in l] for l in self.l4]
+        [[som.update_lvq(mask, lr, layer=1, layer_total=total) for som in l] for l in self.l1]
+        [[som.update_lvq(mask, lr, layer=2, layer_total=total) for som in l] for l in self.l2]
+        [[som.update_lvq(mask, lr, layer=3, layer_total=total) for som in l] for l in self.l3]
+        [[som.update_lvq(mask, lr, layer=4, layer_total=total) for som in l] for l in self.l4]
     
+
+    # step2
+    def finetune_useadv(self, mask, lr):
+        # mask: (b, ): if each batch is correct or not (+1 or -1)
+        
+        total = 4
+        [[som.update_lvq_useadv(mask, lr, layer=1, layer_total=total) for som in l] for l in self.l1]
+        [[som.update_lvq_useadv(mask, lr, layer=2, layer_total=total) for som in l] for l in self.l2]
+        [[som.update_lvq_useadv(mask, lr, layer=3, layer_total=total) for som in l] for l in self.l3]
+        [[som.update_lvq_useadv(mask, lr, layer=4, layer_total=total) for som in l] for l in self.l4]
+
 
     def save(self, path):
         np.savez(path, l1=self.l1, l2=self.l2, l3=self.l3, l4=self.l4, allow_pickle=True)

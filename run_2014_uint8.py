@@ -30,7 +30,7 @@ class DSNTrainer:
             self.t_test  = mnist['t_test']
     
 
-    def superviser(self, iters=50, batch=100):
+    def superviser(self, iters=100, batch=10):
         # vote: (label, output): histgram of outputs
         vote = np.zeros((10, 100))
         temp_advs = np.zeros((10, 100, 1, 1, 28, 28))
@@ -47,7 +47,7 @@ class DSNTrainer:
             # convert input
             x = x.reshape(batch, 1, 28, 28)
             x = (x * 255).astype(np.uint8)
-            
+
             # voting
             y = self.net.predict(x)
             y = y[:, 0] * 10 + y[:, 1]
@@ -68,6 +68,13 @@ class DSNTrainer:
             vote[:, rep] = 0
             self.reps.append([rep//10, rep%10])
             self.advs[l] = temp_advs[l][rep]
+
+        # duplicate check
+        print(self.reps)
+        seen_reps = []
+        uniq_reps = [x for x in self.reps if x not in seen_reps and not seen_reps.append(x)]
+        if len(self.reps) != len(uniq_reps):
+            sys.exit('Error: self.reps has duplicates.')
 
 
     def validation(self, iters=100, batch=100):
@@ -136,18 +143,30 @@ class DSNTrainer:
             x = x.reshape(batch, 1, 28, 28)
             x = (x * 255).astype(np.uint8)
 
-            # step1: advance prop of supervisor
-            x_adv = self.__advs(t)
-            y_adv = self.net.predict(x_adv)
+            # step1: normal lvq
+            y = self.net.predict(x)
+            m = self.__mask(y, t)
+            self.net.finetune(m, lr)
+            #self.__update_advs(x, t, y)
 
-            # step2: lvq using the advance prop
-            y_useadv = self.net.predict_useadv(x)
-            self.net.finetune(lr=lr)
+            # step2: advance prop of supervisor
+            # x_adv = self.__advs(t)
+            # y_adv = self.net.predict(x_adv)
 
-            # step3: update advs
-            if iter % 99 == 0:
-                y = self.net.predict(x)
-                self.__update_advs(x, t, y)
+            # # step3: lvq using the advance prop
+            # y_useadv = self.net.predict_useadv(x)
+            # m_useadv = self.__mask(y_useadv, t)
+            # self.net.finetune(m_useadv, lr)
+
+
+    def __mask(self, y, t):
+        mask = np.zeros(y.shape[0])
+
+        # (y == t) -> +1, (y != t) -> -1
+        for b in six.moves.range(y.shape[0]):
+            mask[b] = 1.0 if (y[b][0], y[b][1]) == (self.reps[t[b]][0], self.reps[t[b]][1]) else -1.0
+        
+        return mask
 
 
     def __advs(self, t):
@@ -227,14 +246,14 @@ class DSNTrainer:
 t = DSNTrainer()
 
 # pretraining
-t.pretraining()
-t.superviser()
-t.validation()
-t.saveparams('params_pretrain_0513_1.npz')
+# t.pretraining()
+# t.superviser()
+# t.validation()
+# t.saveparams('params_pretrain_0513_1.npz')
 
 # finetuning
-# t.loadparams('params_pretrain.npz')
-# t.superviser()
-# t.finetuning()
-# t.validation()
-# t.saveparams('params_finetune_0513_1.npz')
+t.loadparams('params_finetune_0513_2.npz')
+t.superviser()
+t.finetuning()
+t.validation()
+t.saveparams('params_finetune_0513_3.npz')
